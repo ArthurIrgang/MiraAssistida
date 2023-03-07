@@ -2,7 +2,7 @@ import cv2
 import os
 
 # Define the number of images to capture
-num_images = 10
+num_images = 20
 
 # Define the path to the output directory
 output_dir = "calibration_images/raw_images"
