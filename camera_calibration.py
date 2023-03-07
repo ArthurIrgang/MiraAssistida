@@ -20,10 +20,10 @@ if not os.path.exists(corrected_dir):
 encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
 
 # Define the size of the checkerboard pattern
-pattern_size = (9, 13)
+pattern_size = (9, 9)
 
 # Define the size of the squares in the checkerboard pattern in mm
-square_size = 19.0
+square_size = 20.0
 
 # Define the termination criteria for the calibration algorithm
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -35,7 +35,7 @@ object_points *= square_size
 
 # Arrays to store object points and image points from all the images.
 object_points_list = [] # 3d point in real world space
-image_points_list = [] # 2d points in image plane.
+image_points_list = [] # 2d points in image plane
 
 # Get the paths of all the calibration images
 images = glob.glob('calibration_images/raw_images/*.jpg')
@@ -51,8 +51,7 @@ for fname in images:
     cv2.destroyAllWindows()
 
     # Find the corners of the checkerboard pattern
-    flags = cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_NORMALIZE_IMAGE
-    ret, corners = cv2.findChessboardCorners(gray, pattern_size, flags=flags)
+    ret, corners = cv2.findChessboardCorners(gray, pattern_size, None)
 
     # If the corners are found, add object points and image points to the lists
     if ret:
@@ -65,32 +64,37 @@ for fname in images:
         cv2.imshow('Checkerboard Corners', img)
         cv2.waitKey(500)
         # Save the image to the output directory
-        filename = os.path.join(detected_dir, f"detected.jpg")
+        filename = os.path.join(detected_dir, f"detected{i+1}.jpg")
         cv2.imwrite(filename, img, encode_params)
         i+=1
-    
-
 
 cv2.destroyAllWindows()
 
 # Calibrate the camera using the Zhang method
-ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(object_points_list, image_points_list, gray.shape[::-1], None, None)
+ret, mtx, dist_coeffs, rvecs, tvecs = cv2.calibrateCamera(object_points_list, image_points_list, gray.shape[::-1], None, None)
 
 # Print the camera matrix and distortion coefficients
 print("Camera matrix:\n", mtx)
-print("Distortion coefficients:\n", dist)
+print("Distortion coefficients:\n", dist_coeffs)
+R, _ = cv2.Rodrigues(rvecs[0])
+print("Matriz de Rotação:\n", R)
+#print("Vetor de Translação:\n", tvecs[0])
+
 # Save the calibration parameters to a YAML file
 with open('calibration_parameters.yaml', 'w') as file:
-    yaml_data = {'camera_matrix': mtx.tolist(), 'distortion_coefficients': dist.tolist()}
+    yaml_data = {
+        'camera_matrix': mtx.tolist(), 
+        'distortion_coefficients': dist_coeffs.tolist()
+    }
     yaml.dump(yaml_data, file)
 
 print("Calibration complete. Calibration parameters saved to 'calibration_parameters.yaml'.")
 
 # Load an image and undistort it using the calibration parameters
-img = cv2.imread('calibration_images/raw_images/image_6.jpg')
+img = cv2.imread('calibration_images/raw_images/image_1.jpg')
 h, w = img.shape[:2]
-newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
-undistorted_img = cv2.undistort(img, mtx, dist, None, newcameramtx)
+newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist_coeffs, (w, h), 1, (w, h))
+undistorted_img = cv2.undistort(img, mtx, dist_coeffs, None, newcameramtx)
 
 # Display the raw image and the undistorted image
 cv2.imshow('raw image', img)
