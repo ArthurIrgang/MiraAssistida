@@ -108,6 +108,7 @@ def intrinsic(detected_dir = "calibration_images/detected_images", corrected_dir
     cv2.destroyAllWindows()
 
 def extrinsic(calibration_file = 'calibration_parameters.yaml'):
+    
     # Load the calibration parameters from the YAML file
     with open(calibration_file, 'r') as f:
         calib_data = yaml.safe_load(f)
