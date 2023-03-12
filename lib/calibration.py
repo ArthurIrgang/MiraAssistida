@@ -3,13 +3,47 @@ import cv2
 import glob
 import os
 import yaml
+from lib import video
 
 # Define the size of the checkerboard pattern(mm)
 pattern_size = (9, 9)
 square_size = 20.0
 
-# Defines image size
-imageSize = (1920,1080)
+def getImages(cap, num_images = 20):
+
+    # Define the path to the output directory
+    output_dir = "calibration_images/new_raw_images"
+
+    # Create the output directory if it doesn't exist
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Set the image format to JPEG
+    encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+
+    # Loop through the desired number of images
+    for i in range(num_images):
+        # Wait for the user to press the 'p' key
+        print(f"Press 'p' to capture image {i+1}/{num_images}...")
+        while True:
+            ret, frame = cap.read()
+            cv2.imshow("Press 'p' to capture", frame)
+            if cv2.waitKey(1) & 0xFF == ord('p'):
+                break
+            elif cv2.waitKey(1) & 0xFF == ord('q'):
+                exit()
+
+        # Capture an image from the camera
+        ret, img = cap.read()
+
+        # Save the image to the output directory
+        filename = os.path.join(output_dir, f"image_{i+1}.jpg")
+        cv2.imwrite(filename, img, encode_params)
+
+    # Release the camera
+    cap.release()
+
+    print(f"{num_images} images captured and saved to {output_dir}.")
 
 def intrinsic(detected_dir = "calibration_images/detected_images", corrected_dir = "calibration_images/corected_images"):
 
@@ -37,7 +71,7 @@ def intrinsic(detected_dir = "calibration_images/detected_images", corrected_dir
     image_points_list = [] # 2d points in image plane
 
     # Get the paths of all the calibration images
-    images = glob.glob('calibration_images/raw_images/*.jpg')
+    images = glob.glob('calibration_images/new_raw_images/*.jpg')
 
     # Loop through all the calibration images and find the corners of the checkerboard pattern
     i=0
@@ -65,7 +99,8 @@ def intrinsic(detected_dir = "calibration_images/detected_images", corrected_dir
             # Save the image to the output directory
             filename = os.path.join(detected_dir, f"detected{i+1}.jpg")
             cv2.imwrite(filename, img, encode_params)
-            i+=1
+        
+        i+=1
 
     cv2.destroyAllWindows()
 
@@ -85,17 +120,8 @@ def intrinsic(detected_dir = "calibration_images/detected_images", corrected_dir
         }
         yaml.dump(yaml_data, file)
 
-    fovx, fovy, focalLength, principalPoint, aspectRatio = cv2.calibrationMatrixValues(mtx, imageSize,)
-
-    print(fovx)
-    print(fovy)
-    print(focalLength)
-    print(principalPoint)
-    print(aspectRatio) 
-    print("Calibration complete. Calibration parameters saved to 'calibration_parameters.yaml'.")
-
     # Load an image and undistort it using the calibration parameters
-    img = cv2.imread('calibration_images/raw_images/image_1.jpg')
+    img = cv2.imread('calibration_images/new_raw_images/image_4.jpg')
     h, w = img.shape[:2]
     newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist_coeffs, (w, h), 1, (w, h))
     undistorted_img = cv2.undistort(img, mtx, dist_coeffs, None, newcameramtx)
@@ -107,7 +133,7 @@ def intrinsic(detected_dir = "calibration_images/detected_images", corrected_dir
 
     cv2.destroyAllWindows()
 
-def extrinsic(calibration_file = 'calibration_parameters.yaml'):
+def extrinsic(videoCapture, calibration_file = 'calibration_parameters.yaml'):
     
     # Load the calibration parameters from the YAML file
     with open(calibration_file, 'r') as f:
@@ -121,7 +147,6 @@ def extrinsic(calibration_file = 'calibration_parameters.yaml'):
     print("\nCoeficientes de Distorção:")
     print(dist_coeffs)
 
-
     # Define the termination criteria for the calibration algorithm
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
@@ -129,13 +154,6 @@ def extrinsic(calibration_file = 'calibration_parameters.yaml'):
     objp = np.zeros((pattern_size[0]*pattern_size[1], 3), np.float32)
     objp[:,:2] = np.mgrid[0:pattern_size[0], 0:pattern_size[1]].T.reshape(-1,2)
     objp *= square_size
-
-    # Load an image to perform extrinsic calibration on
-    videoCapture = cv2.VideoCapture(0)
-
-    # Set the resolution of the camera to be the same used in the calibration
-    videoCapture.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-    videoCapture.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
     
     while True:
         ret, img = videoCapture.read()
@@ -168,6 +186,15 @@ def extrinsic(calibration_file = 'calibration_parameters.yaml'):
         cv2.drawChessboardCorners(undistorted_img, pattern_size, corners2, ret)
         cv2.imshow('Checkerboard Corners', undistorted_img)
         cv2.waitKey(0)
+
+        with open('calibration_parameters.yaml', 'w') as file:
+            yaml_data = {
+                'camera_matrix': camera_matrix.tolist(), 
+                'distortion_coefficients': dist_coeffs.tolist(),
+                'Rotation matrix': R.tolist(),
+                'Translation vectors': tvecs.tolist()
+            }
+            yaml.dump(yaml_data, file)
 
         # Calculate the distance to the calibration pattern
         print("Distance to pattern: ", tvecs[2], "mm")

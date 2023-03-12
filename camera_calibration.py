@@ -38,7 +38,7 @@ object_points_list = [] # 3d point in real world space
 image_points_list = [] # 2d points in image plane
 
 # Get the paths of all the calibration images
-images = glob.glob('calibration_images/raw_images/*.jpg')
+images = glob.glob('calibration_images/new_raw_images/*.jpg')
 
 # Loop through all the calibration images and find the corners of the checkerboard pattern
 i=0

@@ -5,6 +5,11 @@ from lib import calibration, video
 # camera_matrix, dist_coeffs, R, tvecs = calibration.extrinsic()
 
 
-live = video.openLive()
+live = video.openLive(720, 30)
+# calibration.getImages(live)
 
-video.ballTracking(live)
+# calibration.intrinsic()
+
+calibration.extrinsic(live)
+
+#video.ballTracking(live)
