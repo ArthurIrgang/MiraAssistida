@@ -45,7 +45,7 @@ objp *= square_size
 
 # Load an image to perform extrinsic calibration on
 #img = cv2.imread('D:/FRGS/TCC/MiraAssistida/calibration_images/raw_images/image_5.jpg')
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+gray = cv2.cvtColor(img_undistorted, cv2.COLOR_BGR2GRAY)
 
 # Find the corners of the checkerboard pattern in the image
 ret, corners = cv2.findChessboardCorners(gray, pattern_size, None)
@@ -62,6 +62,6 @@ if ret:
     R, _ = cv2.Rodrigues(rvecs)
     print("Rotation matrix:\n", R)
     print("Translation vectors:\n", tvecs)
-    cv2.drawChessboardCorners(img, pattern_size, corners2, ret)
-    cv2.imshow('Checkerboard Corners', img)
+    cv2.drawChessboardCorners(img_undistorted, pattern_size, corners2, ret)
+    cv2.imshow('Checkerboard Corners', img_undistorted)
     cv2.waitKey(0)
