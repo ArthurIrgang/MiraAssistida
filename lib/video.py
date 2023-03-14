@@ -10,12 +10,10 @@ def openLive(videoResolution = 720, fps = 60):
 
     # Open a live video
     videoCapture = cv2.VideoCapture(0)
-
     # Set the resolution of the camera to be the same used in the calibration
     videoCapture.set(cv2.CAP_PROP_FRAME_HEIGHT, videoResolution)
     videoCapture.set(cv2.CAP_PROP_FRAME_WIDTH, round(cameraProportion*videoResolution))
     videoCapture.set(cv2.CAP_PROP_FPS, fps) 
-
 
     return videoCapture
 
@@ -25,7 +23,7 @@ def lowPassFilter(image, kernel_size=(5, 5)):
     return filtered_image
 
 
-def extractGreenRegion(videoCapture, lower_green=np.array([40, 100, 100]), upper_green=np.array([100, 255, 255]), kernel_size=(10,10)):
+def extractGreenRegion(videoCapture, lower_green=np.array([40, 40, 40]), upper_green=np.array([100, 255, 255]), kernel_size=(50,50)):
     # Read the next frame from the video stream
     ret, frame = videoCapture.read()
 
@@ -63,24 +61,19 @@ def extractGreenRegion(videoCapture, lower_green=np.array([40, 100, 100]), upper
     else: 
         print("Green screen not detected")
 
-
-    
-
-   
-
 def ballTracking(videoCapture, frameDelay = 17):
     #videoCapture = cv2.VideoCapture('D:/UFRGS/TCC/MiraAssistida/testes/cropped_video.mp4')
 
     # dist = lambda x1,y1,x2,y2: ((x1-x2)**2 + (y1-y2)**2)/2
+    drawLine = False
 
     # Create an empty list to store the center positions of the ball
     center_list = []
 
     while True:
-        ret, frame = videoCapture.read()
-        if not ret: 
-            break
-        grayFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        greenFrame = extractGreenRegion(videoCapture)
+        grayFrame = cv2.cvtColor(greenFrame, cv2.COLOR_BGR2GRAY)
         blurFrame = cv2.GaussianBlur(grayFrame, (5,5), 0)
 
         # imagem fonte, metodo, dp, distância mínima entre 2 círculos, sensibilidade, acurácia(numero de pontos de borda), raio minimo, raio maximo 
@@ -93,10 +86,10 @@ def ballTracking(videoCapture, frameDelay = 17):
             print(circles)
         
             # Draw the center of the circle
-            cv2.circle(frame, (circles[0,0, 0], circles[0,0, 1]), 1, (0,100,100), 5)
+            cv2.circle(greenFrame, (circles[0,0, 0], circles[0,0, 1]), 1, (0,100,100), 5)
 
             # Draw the edge of the circle
-            cv2.circle(frame, (circles[0,0, 0], circles[0,0, 1]), circles[0,0, 2], (255,0,255), 3)
+            cv2.circle(greenFrame, (circles[0,0, 0], circles[0,0, 1]), circles[0,0, 2], (255,0,255), 3)
         
             # prevCircle = chosen
 
@@ -104,11 +97,12 @@ def ballTracking(videoCapture, frameDelay = 17):
             center = (circles[0,0,0], circles[0,0,1])
             center_list.append(center)
 
-        # Draw a red line between the center positions in the list to show the trajectory of the ball
-        for i in range(1, len(center_list)):
-            cv2.line(frame, center_list[i-1], center_list[i], (0, 0, 255), thickness=2)
+        if drawLine:
+            # Draw a red line between the center positions in the list to show the trajectory of the ball
+            for i in range(1, len(center_list)):
+                cv2.line(greenFrame, center_list[i-1], center_list[i], (0, 0, 255), thickness=2)
     
-        cv2.imshow("Circles", frame)
+        cv2.imshow("Circles", greenFrame)
         if cv2.waitKey(frameDelay) & 0xFF == ord('q'): 
             break
 
