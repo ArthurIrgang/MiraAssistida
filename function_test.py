@@ -10,6 +10,8 @@ live = video.openLive(720, 30)
 
 # calibration.intrinsic()
 
-calibration.extrinsic(live)
+# calibration.extrinsic(live)
 
-#video.ballTracking(live)
+
+# video.extract_green_region(live) 
+# video.ballTracking(live)

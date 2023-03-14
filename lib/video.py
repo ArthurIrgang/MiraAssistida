@@ -19,6 +19,55 @@ def openLive(videoResolution = 720, fps = 60):
 
     return videoCapture
 
+def lowPassFilter(image, kernel_size=(5, 5)):
+    kernel = np.ones(kernel_size, np.float32) / (kernel_size[0] * kernel_size[1])
+    filtered_image = cv2.filter2D(image, -1, kernel)
+    return filtered_image
+
+
+def extractGreenRegion(videoCapture, lower_green=np.array([40, 100, 100]), upper_green=np.array([100, 255, 255]), kernel_size=(10,10)):
+    # Read the next frame from the video stream
+    ret, frame = videoCapture.read()
+
+    # Convert the image to the HSV color space
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    
+    # Mask the green region in the image
+    mask = cv2.inRange(hsv, lower_green, upper_green)
+
+    # Perform morphological operations on the mask to reduce noise
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, kernel_size)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+
+    # Find the contour of the green region
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    if contours:
+        # Find the largest contour
+        largest_contour = max(contours, key=cv2.contourArea)
+
+        # Get the bounding rectangle of the largest contour
+        x, y, w, h = cv2.boundingRect(largest_contour)
+
+        # Extract the green screen region from the frame
+        green_screen_region = frame[y:y+h, x:x+w]
+
+        # Create a copy of the original frame
+        original_frame = frame.copy()
+
+        # Draw a rectangle around the green screen region on the original frame
+        detection = cv2.rectangle(original_frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+        cv2.imshow("Detected Region", detection)
+
+        return green_screen_region
+    else: 
+        print("Green screen not detected")
+
+
+    
+
+   
+
 def ballTracking(videoCapture, frameDelay = 17):
     #videoCapture = cv2.VideoCapture('D:/UFRGS/TCC/MiraAssistida/testes/cropped_video.mp4')
 
@@ -34,7 +83,7 @@ def ballTracking(videoCapture, frameDelay = 17):
         grayFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blurFrame = cv2.GaussianBlur(grayFrame, (5,5), 0)
 
-    # imagem fonte, metodo, dp, distância mínima entre 2 círculos, sensibilidade, acurácia(numero de pontos de borda), raio minimo, raio maximo 
+        # imagem fonte, metodo, dp, distância mínima entre 2 círculos, sensibilidade, acurácia(numero de pontos de borda), raio minimo, raio maximo 
         circles = cv2.HoughCircles(blurFrame, cv2.HOUGH_GRADIENT, 1, 1000,
                                     param1=100,param2=15,minRadius=1,maxRadius=15) 
     
