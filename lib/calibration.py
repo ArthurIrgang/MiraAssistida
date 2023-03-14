@@ -6,8 +6,12 @@ import yaml
 from lib import video
 
 # Define the size of the checkerboard pattern(mm)
-pattern_size = (9, 9)
-square_size = 20.0
+
+# pattern_size = (9, 9)
+# square_size = 20.0
+
+pattern_size = (15,9)
+square_size = 47
 
 def getImages(cap, num_images = 20):
 

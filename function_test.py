@@ -5,11 +5,15 @@ from lib import calibration, video
 # camera_matrix, dist_coeffs, R, tvecs = calibration.extrinsic()
 
 
-live = video.openLive(720, 30)
+live = video.openLive(720, 60)
+video.ballTracking(live)
+
 # calibration.getImages(live)
 
 # calibration.intrinsic()
 
-calibration.extrinsic(live)
+# calibration.extrinsic(live)
 
-#video.ballTracking(live)
+
+# video.extract_green_region(live) 
+# video.ballTracking(live)

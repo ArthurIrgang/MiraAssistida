@@ -15,7 +15,31 @@ print("\nCoeficientes de Distorção:")
 print(dist_coeffs)
 
 # Load an image to correct the distortion
-img = cv2.imread('D:/UFRGS/TCC/MiraAssistida/calibration_images/raw_images/image_5.jpg')
+# img = cv2.imread('D:/UFRGS/TCC/MiraAssistida/calibration_images/new_raw_images/image_5.jpg')
+
+#Defines the video proportion
+cameraProportion = 16/9
+
+# Open a live video
+videoCapture = cv2.VideoCapture(0)
+
+# Set the resolution of the camera to be the same used in the calibration
+videoCapture.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+videoCapture.set(cv2.CAP_PROP_FRAME_WIDTH, round(cameraProportion*720))
+videoCapture.set(cv2.CAP_PROP_FPS, 60) 
+
+while True:
+        ret, img = videoCapture.read()
+        if not ret: 
+            break
+        
+        h, w = img.shape[:2]
+        newcameramtx, roi = cv2.getOptimalNewCameraMatrix(camera_matrix, dist_coeffs, (w, h), 1, (w, h))
+        undistorted_img = cv2.undistort(img, camera_matrix, dist_coeffs, None, newcameramtx)
+        gray = cv2.cvtColor(undistorted_img, cv2.COLOR_BGR2GRAY)
+        cv2.imshow("Camera", undistorted_img)
+        if cv2.waitKey(1) & 0xFF == ord('q'): 
+            break
 
 # Get the size of the image
 h, w = img.shape[:2]
