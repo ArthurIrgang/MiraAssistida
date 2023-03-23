@@ -7,11 +7,11 @@ from lib import video
 
 # Define the size of the checkerboard pattern(mm)
 
-# pattern_size = (9, 9)
-# square_size = 20.0
+pattern_size = (9, 9)
+square_size = 20.0
 
-pattern_size = (15,9)
-square_size = 47
+# pattern_size = (15,9)
+# square_size = 47
 
 def getImages(cap, num_images = 20):
 
@@ -75,16 +75,17 @@ def intrinsic(detected_dir = "calibration_images/detected_images", corrected_dir
     image_points_list = [] # 2d points in image plane
 
     # Get the paths of all the calibration images
-    images = glob.glob('calibration_images/new_raw_images/*.jpg')
+    images = glob.glob('calibration_images/raw_images/*.jpg')
 
     # Loop through all the calibration images and find the corners of the checkerboard pattern
     i=0
+
     for fname in images:
         img = cv2.imread(fname)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         cv2.imshow("Image", gray)
-        cv2.waitKey(500)
+        cv2.waitKey(300)
         cv2.destroyAllWindows()
 
         # Find the corners of the checkerboard pattern
@@ -125,7 +126,7 @@ def intrinsic(detected_dir = "calibration_images/detected_images", corrected_dir
         yaml.dump(yaml_data, file)
 
     # Load an image and undistort it using the calibration parameters
-    img = cv2.imread('calibration_images/new_raw_images/image_4.jpg')
+    img = cv2.imread('calibration_images/new_raw_images/image_14.jpg')
     h, w = img.shape[:2]
     newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist_coeffs, (w, h), 1, (w, h))
     undistorted_img = cv2.undistort(img, mtx, dist_coeffs, None, newcameramtx)
@@ -133,6 +134,9 @@ def intrinsic(detected_dir = "calibration_images/detected_images", corrected_dir
     # Display the raw image and the undistorted image
     cv2.imshow('raw image', img)
     cv2.imshow('corrected image', undistorted_img)
+
+    cv2.imwrite("undistorted.jpg" ,undistorted_img)
+    cv2.imwrite("distorted.jpg" ,img)
     cv2.waitKey(0)
 
     cv2.destroyAllWindows()
@@ -203,4 +207,34 @@ def extrinsic(videoCapture, calibration_file = 'calibration_parameters.yaml'):
         # Calculate the distance to the calibration pattern
         print("Distance to pattern: ", tvecs[2], "mm")
 
+        videoCapture.release()
+        cv2.destroyAllWindows()
+
         return camera_matrix, dist_coeffs, R, tvecs
+
+
+def undistort(frame, calibration_file):
+    # Load the calibration parameters from the YAML file
+    with open(calibration_file, 'r') as f:
+        calib_data = yaml.safe_load(f)
+
+    # Extract the camera matrix and distortion coefficients from the data
+    camera_matrix = np.array(calib_data['camera_matrix'])
+    dist_coeffs = np.array(calib_data['distortion_coefficients'])
+
+    # Load an image and undistort it using the calibration parameters
+    img = cv2.imread(frame)
+    h, w = img.shape[:2]
+    print(h,w)
+    newcameramtx, roi = cv2.getOptimalNewCameraMatrix(camera_matrix, dist_coeffs, (w, h), 1, (w, h))
+    undistorted_img = cv2.undistort(img, camera_matrix, dist_coeffs, None, newcameramtx)
+
+    # Display the raw image and the undistorted image
+    cv2.imshow('raw image', img)
+    cv2.imshow('corrected image', undistorted_img)
+
+    cv2.imwrite("undistorted.jpg" ,undistorted_img)
+    cv2.imwrite("distorted.jpg" ,img)
+    cv2.waitKey(0)
+
+    cv2.destroyAllWindows()
